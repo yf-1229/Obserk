@@ -14,8 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.obserk.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,11 +26,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val isDark = isSystemInDarkTheme()
-    
-    // isStudying に基づいて Elevation を調整
     val elevationSize = if (uiState.isStudying) 4.dp else 12.dp
 
-    // isStudying に基づいてカラーを設定
     val cardColors = if (uiState.isStudying) {
         CardDefaults.cardColors(
             containerColor = if (isDark) Color.Black else Color.White,
@@ -53,30 +51,39 @@ fun HomeScreen(
         colors = cardColors,
         onClick = { onCardPressed() },
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // 中央のテキスト
+        Box(modifier = Modifier.fillMaxSize()) {
             Text(
-                text = if (uiState.isStudying) "Studying..." else "Time after preStudy",
+                text = if (uiState.isStudying) {
+                    stringResource(R.string.studying_label)
+                } else {
+                    stringResource(R.string.time_after_prestudy)
+                },
                 style = MaterialTheme.typography.displayMedium,
                 modifier = Modifier.align(Alignment.Center)
             )
 
-            // 下部のテキスト
             Text(
-                text = if (uiState.isStudying) "Tap to Stop" else "Tap to Start",
+                text = if (uiState.isStudying) {
+                    stringResource(R.string.tap_to_stop)
+                } else {
+                    stringResource(R.string.tap_to_start)
+                },
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(bottom = 40.dp)
             )
+            
+            // 経過時間を表示（ストップウォッチ）
+            if (uiState.isStudying) {
+                Text(
+                    text = stringResource(R.string.minutes_unit, uiState.studyTimeMinutes),
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 100.dp)
+                )
+            }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    HomeScreen(uiState = HomeUiState(), onCardPressed = {})
 }
