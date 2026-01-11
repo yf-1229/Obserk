@@ -3,6 +3,7 @@ package com.obserk
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
@@ -17,6 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,7 +42,8 @@ fun ObserkApp(viewModel: HomeViewModel = viewModel()) {
         sheetPeekHeight = 80.dp,
         sheetContent = {
             Text(text = "Bottom Sheet", modifier = Modifier.fillMaxSize(), fontSize = 20.sp)
-        }
+        },
+        modifier = Modifier.safeDrawingPadding(),
     ) { innerPadding ->
         HomeScreen(
             uiState = uiState,
@@ -48,4 +51,10 @@ fun ObserkApp(viewModel: HomeViewModel = viewModel()) {
             modifier = Modifier.padding(innerPadding)
         )
     }
+}
+
+@Preview
+@Composable
+fun ObserkAppPreview() {
+    ObserkApp()
 }
