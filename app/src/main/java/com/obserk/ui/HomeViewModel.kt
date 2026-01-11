@@ -23,11 +23,9 @@ class HomeViewModel : ViewModel() {
         _uiState.value = HomeUiState()
     }
 
-    fun updateUserActive(active: Boolean) {
-        _uiState.value = _uiState.value.copy(isStudying = active)
-        userActive = active
+    fun toggleStudying() {
+        _uiState.value = _uiState.value.copy(isStudying = !_uiState.value.isStudying)
     }
-
     fun updateStudyTime(minutes: Int) {
         _uiState.value = _uiState.value.copy(studyTimeMinutes = minutes)
     }
