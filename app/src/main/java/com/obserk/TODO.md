@@ -5,3 +5,5 @@
 5. Status bar was covered with white. Update UI.
 6. すべての文字をstrings.xmlに移行して。
 7. haptics
+8. fix SQL
+9. kumikomi tensorflow lite
