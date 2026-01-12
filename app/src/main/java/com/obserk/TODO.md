@@ -7,3 +7,4 @@
 7. haptics
 8. fix SQL
 9. kumikomi tensorflow lite
+10. gamen status bar kabutteru
