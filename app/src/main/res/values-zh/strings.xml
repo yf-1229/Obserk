@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Obserk</string>
+    <string name="tap_to_start">点击开始</string>
+    <string name="tap_to_stop">点击停止</string>
+    <string name="started_at">开始于 %1$s</string>
+    <string name="since_last_time">自上次以来</string>
+    <string name="study_logs_title">学习日志</string>
+    <string name="minutes_unit">%1$d 分</string>
+</resources>

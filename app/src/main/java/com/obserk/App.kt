@@ -1,6 +1,5 @@
 package com.obserk
 
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.BottomSheetScaffold
@@ -19,7 +18,6 @@ import com.obserk.ui.HomeScreen
 import com.obserk.ui.HomeViewModel
 import com.obserk.ui.LogScreen
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ObserkApp(viewModel: HomeViewModel = viewModel()) {
@@ -35,7 +33,6 @@ fun ObserkApp(viewModel: HomeViewModel = viewModel()) {
         scaffoldState = scaffoldState,
         sheetPeekHeight = 80.dp,
         sheetContent = {
-            // ボトムシート内に LogScreen を表示
             LogScreen(uiState = uiState)
         },
         modifier = Modifier.safeDrawingPadding(),

@@ -4,5 +4,4 @@
 4. Not Timer it's stopwatch(FinishTime - StartTime to record)
 5. Status bar was covered with white. Update UI.
 6. すべての文字をstrings.xmlに移行して。
-7. I want to use the Camera. Pls ask user to Permission.
-8. アウトカメラから一分ごとに静止画を取ってRoomからローカルのみに保存して。
+7. haptics

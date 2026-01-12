@@ -9,5 +9,12 @@ data class StudyLogEntity(
     val id: Int = 0,
     val date: String,
     val durationMinutes: Int,
-    val imagePath: String? = null // Step 8: 撮影した画像のパスを保存
+    val audioPath: String? = null,
+    val label: String? = null // 学習内容のラベル
+)
+
+@Entity(tableName = "study_labels")
+data class StudyLabelEntity(
+    @PrimaryKey
+    val name: String
 )

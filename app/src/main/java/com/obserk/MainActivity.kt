@@ -19,21 +19,19 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ObserkTheme {
-                // カメラ権限のリクエスト
                 val context = LocalContext.current
                 val launcher = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission()
-                ) { isGranted ->
-                    // 権限が許可された場合の処理（必要に応じて）
-                }
+                ) { /* Handle permission result */ }
 
                 LaunchedEffect(Unit) {
+                    // マイク権限のリクエストに変更
                     if (ContextCompat.checkSelfPermission(
                             context,
-                            Manifest.permission.CAMERA
+                            Manifest.permission.RECORD_AUDIO
                         ) != PackageManager.PERMISSION_GRANTED
                     ) {
-                        launcher.launch(Manifest.permission.CAMERA)
+                        launcher.launch(Manifest.permission.RECORD_AUDIO)
                     }
                 }
 

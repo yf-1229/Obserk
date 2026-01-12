@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Obserk</string>
+    <string name="tap_to_start">タップして開始</string>
+    <string name="tap_to_stop">タップして停止</string>
+    <string name="started_at">%1$s に開始</string>
+    <string name="since_last_time">前回から</string>
+    <string name="study_logs_title">学習記録</string>
+    <string name="minutes_unit">%1$d 分</string>
+</resources>

@@ -1,18 +1,19 @@
 package com.obserk.ui
 
 import android.app.Application
+import android.content.Intent
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.obserk.data.AppDatabase
 import com.obserk.data.StudyLogEntity
 import com.obserk.data.StudyLogRepository
+import com.obserk.service.StudyForegroundService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -23,27 +24,43 @@ import java.util.Locale
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: StudyLogRepository
     private val _isStudying = MutableStateFlow(false)
-    private val _elapsedSeconds = MutableStateFlow(0L)
+    private val _startTimeMillis = MutableStateFlow<Long?>(null)
+    private val _lastFinishedTimeMillis = MutableStateFlow<Long?>(null)
+    private val _currentTimeMillis = MutableStateFlow(System.currentTimeMillis())
     
-    // 撮影をトリガーするための Flow
-    private val _captureTrigger = MutableSharedFlow<Unit>()
-    val captureTrigger = _captureTrigger.asSharedFlow()
-
     private var timerJob: Job? = null
 
     init {
         val database = AppDatabase.getDatabase(application)
         repository = StudyLogRepository(database.studyLogDao())
+        
+        viewModelScope.launch {
+            while (true) {
+                _currentTimeMillis.value = System.currentTimeMillis()
+                delay(1000)
+            }
+        }
     }
 
     val uiState: StateFlow<HomeUiState> = combine(
         _isStudying,
-        _elapsedSeconds,
+        _startTimeMillis,
+        _lastFinishedTimeMillis,
+        _currentTimeMillis,
         repository.allLogs
-    ) { isStudying, seconds, dbLogs ->
+    ) { isStudying, startTime, lastFinished, currentTime, dbLogs ->
+        
+        val timeSinceLast = if (!isStudying && lastFinished != null) {
+            formatDuration(currentTime - lastFinished)
+        } else {
+            "00:00:00"
+        }
+
         HomeUiState(
             isStudying = isStudying,
-            studyTimeMinutes = (seconds / 60).toInt(),
+            startTimeMillis = startTime,
+            lastFinishedTimeMillis = lastFinished,
+            timeSinceLastStudy = timeSinceLast,
             logs = dbLogs.map { StudyLog(it.date, it.durationMinutes) }
         )
     }.stateIn(
@@ -57,34 +74,49 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun startStopwatch() {
+        val now = System.currentTimeMillis()
         _isStudying.value = true
-        _elapsedSeconds.value = 0
-        timerJob = viewModelScope.launch {
-            while (true) {
-                delay(1000)
-                _elapsedSeconds.value++
-                
-                // 1分ごとに撮影をトリガー (Step 8)
-                if (_elapsedSeconds.value % 60 == 0L) {
-                    _captureTrigger.emit(Unit)
-                }
-            }
+        _startTimeMillis.value = now
+        
+        val context = getApplication<Application>().applicationContext
+        val intent = Intent(context, StudyForegroundService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
         }
     }
 
     private fun stopStopwatch() {
-        timerJob?.cancel()
-        val durationMinutes = (_elapsedSeconds.value / 60).toInt()
-        saveLog(if (durationMinutes > 0) durationMinutes else 1)
+        val now = System.currentTimeMillis()
+        val durationMillis = _startTimeMillis.value?.let { now - it } ?: 0L
+        
+        _lastFinishedTimeMillis.value = now
+        
+        val context = getApplication<Application>().applicationContext
+        context.stopService(Intent(context, StudyForegroundService::class.java))
+
+        val minutes = (durationMillis / 60000).toInt()
+        // 1分以上の場合のみ記録する
+        if (minutes >= 1) {
+            saveLog(minutes)
+        }
         
         _isStudying.value = false
-        _elapsedSeconds.value = 0
+        _startTimeMillis.value = null
     }
 
     private fun saveLog(minutes: Int) {
         viewModelScope.launch {
-            val date = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(Date())
+            val date = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Date())
             repository.insert(StudyLogEntity(date = date, durationMinutes = minutes))
         }
+    }
+
+    private fun formatDuration(durationMillis: Long): String {
+        val seconds = (durationMillis / 1000) % 60
+        val minutes = (durationMillis / (1000 * 60)) % 60
+        val hours = (durationMillis / (1000 * 60 * 60))
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds)
     }
 }

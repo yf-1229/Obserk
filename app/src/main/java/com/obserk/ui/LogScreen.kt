@@ -1,50 +1,98 @@
 package com.obserk.ui
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.obserk.R
 
 @Composable
 fun LogScreen(uiState: HomeUiState) {
+    val dailyStats = uiState.logs
+        .groupBy { it.date }
+        .mapValues { entry -> entry.value.sumOf { it.durationMinutes } }
+        .toList()
+        .sortedByDescending { it.first }
+        .take(7) // 直近7日間
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
         Text(
-            text = "Study Logs",
+            text = stringResource(R.string.study_logs_title),
             style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
+        // 統計グラフセクション
+        if (dailyStats.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(bottom = 24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    val maxMinutes = dailyStats.maxOf { it.second }.toFloat().coerceAtLeast(1f)
+                    dailyStats.reversed().forEach { stat ->
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            val barHeight = (stat.second / maxMinutes * 120).dp
+                            Box(
+                                modifier = Modifier
+                                    .width(24.dp)
+                                    .height(barHeight)
+                                    .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                    .background(MaterialTheme.colorScheme.primary)
+                            )
+                            Text(
+                                text = stat.first.takeLast(5), // MM/dd のみ
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // リストセクション
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(uiState.logs) { log ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp)
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    Text(text = log.date, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        text = log.date,
+                        text = stringResource(R.string.minutes_unit, log.durationMinutes),
                         style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Text(
-                        text = "${log.durationMinutes} min",
-                        style = MaterialTheme.typography.bodyLarge
+                        fontWeight = FontWeight.Bold
                     )
                 }
-                HorizontalDivider()
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
     }
