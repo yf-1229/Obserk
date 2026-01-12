@@ -1,12 +1,13 @@
 package com.obserk.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,13 +19,13 @@ import androidx.compose.ui.unit.sp
 import com.obserk.R
 
 @Composable
-fun LogScreen(uiState: HomeUiState) {
+fun LogScreen(uiState: HomeUiState, viewModel: HomeViewModel) {
     val dailyStats = uiState.logs
         .groupBy { it.date }
         .mapValues { entry -> entry.value.sumOf { it.durationMinutes } }
         .toList()
         .sortedByDescending { it.first }
-        .take(7) // 直近7日間
+        .take(7)
 
     Column(
         modifier = Modifier
@@ -38,7 +39,6 @@ fun LogScreen(uiState: HomeUiState) {
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // 統計グラフセクション
         if (dailyStats.isNotEmpty()) {
             Card(
                 modifier = Modifier
@@ -66,7 +66,7 @@ fun LogScreen(uiState: HomeUiState) {
                                     .background(MaterialTheme.colorScheme.primary)
                             )
                             Text(
-                                text = stat.first.takeLast(5), // MM/dd のみ
+                                text = stat.first.takeLast(5),
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
@@ -76,23 +76,36 @@ fun LogScreen(uiState: HomeUiState) {
             }
         }
 
-        // リストセクション
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(uiState.logs) { log ->
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .clickable { viewModel.startEditingLog(log) }
+                        .padding(vertical = 12.dp)
                 ) {
-                    Text(text = log.date, style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        text = stringResource(R.string.minutes_unit, log.durationMinutes),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(text = log.date, style = MaterialTheme.typography.bodyLarge)
+                            log.label?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        Text(
+                            text = stringResource(R.string.minutes_unit, log.durationMinutes),
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
                 }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         }
     }
