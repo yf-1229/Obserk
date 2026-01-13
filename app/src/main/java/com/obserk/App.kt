@@ -33,7 +33,7 @@ fun ObserkApp(viewModel: HomeViewModel = viewModel()) {
         scaffoldState = scaffoldState,
         sheetPeekHeight = 80.dp,
         sheetContent = {
-            LogScreen(uiState = uiState)
+            LogScreen(uiState = uiState, viewModel = viewModel)
         },
         modifier = Modifier.safeDrawingPadding(),
     ) { innerPadding ->
