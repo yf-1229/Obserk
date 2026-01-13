@@ -12,6 +12,12 @@ interface StudyLogDao {
     @Query("SELECT * FROM study_logs ORDER BY id DESC")
     fun getAllLogs(): Flow<List<StudyLogEntity>>
 
+    @Query("SELECT * FROM study_logs ORDER BY id DESC LIMIT 1")
+    suspend fun getLatestLog(): StudyLogEntity?
+
+    @Query("SELECT * FROM study_logs WHERE id = :id")
+    suspend fun getLogById(id: Int): StudyLogEntity?
+
     @Insert
     suspend fun insert(log: StudyLogEntity): Long
 

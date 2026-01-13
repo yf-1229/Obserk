@@ -33,15 +33,14 @@ fun ObserkApp(viewModel: HomeViewModel = viewModel()) {
         scaffoldState = scaffoldState,
         sheetPeekHeight = 80.dp,
         sheetContent = {
-            LogScreen(uiState = uiState)
+            // viewModel を渡すように修正
+            LogScreen(uiState = uiState, viewModel = viewModel)
         },
         modifier = Modifier.safeDrawingPadding(),
     ) { innerPadding ->
         HomeScreen(
             uiState = uiState,
-            onCardPressed = {
-                viewModel.toggleStudying()
-            },
+            viewModel = viewModel, // viewModel を渡すように修正
             modifier = Modifier.padding(innerPadding)
         )
     }

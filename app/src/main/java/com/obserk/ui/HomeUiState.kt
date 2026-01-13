@@ -6,10 +6,15 @@ data class HomeUiState(
     val logs: List<StudyLog> = emptyList(),
     val startTimeMillis: Long? = null,
     val lastFinishedTimeMillis: Long? = null,
-    val timeSinceLastStudy: String = "00:00:00"
+    val timeSinceLastStudy: String = "00:00:00",
+    val labels: List<String> = emptyList(),
+    val showCompletionDialog: Boolean = false,
+    val editingLog: StudyLog? = null
 )
 
 data class StudyLog(
+    val id: Int = 0,
     val date: String,
-    val durationMinutes: Int
+    val durationMinutes: Int,
+    val label: String? = null
 )
