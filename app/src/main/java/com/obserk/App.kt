@@ -39,9 +39,7 @@ fun ObserkApp(viewModel: HomeViewModel = viewModel()) {
     ) { innerPadding ->
         HomeScreen(
             uiState = uiState,
-            onCardPressed = {
-                viewModel.toggleStudying()
-            },
+            viewModel = viewModel,
             modifier = Modifier.padding(innerPadding)
         )
     }

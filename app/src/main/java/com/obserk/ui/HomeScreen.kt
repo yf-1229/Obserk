@@ -55,7 +55,7 @@ fun HomeScreen(
     }
 
     Card(
-        modifier = modifier.fillMaxSize().padding(bottom = 8.dp).safeDrawingPadding(),
+        modifier = modifier.fillMaxSize().padding(bottom = 8.dp),
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = if (uiState.isStudying) 4.dp else 12.dp),
         border = CardDefaults.outlinedCardBorder(),
