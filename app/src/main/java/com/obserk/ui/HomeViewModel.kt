@@ -46,7 +46,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         _currentTimeMillis,       // 3
         repository.allLogs,       // 4
         _showCompletionDialog,    // 5
-        _editingLog               // 6
+        _editingLog,              // 6
+        StudyForegroundService.latestMlResult // 7
     ) { params ->
         val isStudying = params[0] as Boolean
         val startTime = params[1] as Long?
@@ -55,6 +56,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val dbLogs = params[4] as List<StudyLogEntity>
         val showCompletion = params[5] as Boolean
         val editingLog = params[6] as StudyLog?
+        val mlResult = params[7] as Boolean?
 
         val timeSinceLast = if (!isStudying && lastFinished != null) {
             formatDuration(currentTime - lastFinished)
@@ -69,7 +71,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             timeSinceLastStudy = timeSinceLast,
             logs = dbLogs.map { StudyLog(it.id, it.date, it.durationMinutes, it.totalElapsedMinutes, it.efficiency) },
             showCompletionDialog = showCompletion,
-            editingLog = editingLog
+            editingLog = editingLog,
+            latestMlResult = if (mlResult == true) "学習中" else if (mlResult == false) "中断中" else null
         )
     }.stateIn(
         scope = viewModelScope,
