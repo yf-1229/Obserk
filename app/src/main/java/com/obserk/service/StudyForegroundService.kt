@@ -44,7 +44,8 @@ class StudyForegroundService : LifecycleService() {
 
     private var effectiveMinutes = 0
     private var totalMinutes = 0
-    private var falseConsecutiveCount = 0 // 連続 False カウンター
+    private var falseConsecutiveCount = 0
+    private var startTimeMillis: Long = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -71,6 +72,7 @@ class StudyForegroundService : LifecycleService() {
             startForeground(1, notification)
         }
 
+        startTimeMillis = System.currentTimeMillis()
         super.onStartCommand(intent, flags, startId)
         startPhotoLoop()
         return START_STICKY
@@ -80,7 +82,7 @@ class StudyForegroundService : LifecycleService() {
         timerJob?.cancel()
         timerJob = lifecycleScope.launch {
             while (isActive) {
-                delay(60000)
+                delay(60000) // 1分ごとに判定
                 totalMinutes++
                 takePhoto()
             }
@@ -98,6 +100,7 @@ class StudyForegroundService : LifecycleService() {
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                     analyzePhoto(photoFile)
+                    if (photoFile.exists()) photoFile.delete()
                 }
                 override fun onError(exception: ImageCaptureException) {
                     Log.e("StudyService", "Photo capture failed", exception)
@@ -112,25 +115,26 @@ class StudyForegroundService : LifecycleService() {
             val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return
             val image = TensorImage.fromBitmap(bitmap)
             val outputs = model.process(image.tensorBuffer)
-            
+
             val floatArray = outputs.outputFeature0AsTensorBuffer.floatArray
             val maxIndex = floatArray.indices.maxByOrNull { floatArray[it] } ?: -1
-            
+
+            // TFLiteの返り値がTrue(ペンを持っている)なら記録を継続(カウントアップ)
+            // Falseなら記録を中断(カウントアップしない)
             val isPenHolding = (maxIndex == 0)
             if (isPenHolding) {
                 effectiveMinutes++
-                falseConsecutiveCount = 0 // 成功したらリセット
+                falseConsecutiveCount = 0
             } else {
-                falseConsecutiveCount++ // 失敗したらカウントアップ
-                
-                // 5分連続で失敗した場合にハプティクスを発生
+                falseConsecutiveCount++
+                // 5分連続でペンを持っていない判定の場合、バイブレーションで通知
                 if (falseConsecutiveCount >= 5) {
                     triggerAlertHaptic()
-                    falseConsecutiveCount = 0 // 通知後はリセット（または再度5分待つ場合はそのまま）
+                    falseConsecutiveCount = 0
                 }
             }
 
-            Log.d("StudyService", "Analyze: $isPenHolding, ConsecutiveFalse: $falseConsecutiveCount")
+            Log.d("StudyService", "Analyze: $isPenHolding, Effective: $effectiveMinutes, Total: $totalMinutes")
 
         } catch (e: Exception) {
             Log.e("StudyService", "ML analysis failed", e)
@@ -147,7 +151,6 @@ class StudyForegroundService : LifecycleService() {
         }
 
         if (vibrator.hasVibrator()) {
-            // コ、コ、コ (短い3回の振動)
             val timings = longArrayOf(0, 50, 100, 50, 100, 50)
             vibrator.vibrate(VibrationEffect.createWaveform(timings, -1))
         }
@@ -164,8 +167,19 @@ class StudyForegroundService : LifecycleService() {
         if (totalMinutes == 0) return
         val efficiency = (effectiveMinutes.toFloat() / totalMinutes.toFloat()) * 100f
         val currentDate = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Date())
+        val endTimeMillis = System.currentTimeMillis()
+
         lifecycleScope.launch(Dispatchers.IO) {
-            repository.insert(StudyLogEntity(startTime = System.currentTimeMillis(), endTime = System.currentTimeMillis(), durationSeconds = (totalMinutes * 60).toLong()))
+            repository.insert(
+                StudyLogEntity(
+                    date = currentDate,
+                    startTime = startTimeMillis,
+                    endTime = endTimeMillis,
+                    durationMinutes = effectiveMinutes,
+                    totalElapsedMinutes = totalMinutes,
+                    efficiency = efficiency
+                )
+            )
         }
     }
 

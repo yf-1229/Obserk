@@ -9,7 +9,6 @@ import com.obserk.data.AppDatabase
 import com.obserk.data.StudyLogEntity
 import com.obserk.data.StudyLogRepository
 import com.obserk.service.StudyForegroundService
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,9 +16,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: StudyLogRepository
@@ -27,16 +23,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _startTimeMillis = MutableStateFlow<Long?>(null)
     private val _lastFinishedTimeMillis = MutableStateFlow<Long?>(null)
     private val _currentTimeMillis = MutableStateFlow(System.currentTimeMillis())
-    
+
     private val _showCompletionDialog = MutableStateFlow(false)
     private val _editingLog = MutableStateFlow<StudyLog?>(null)
-    
-    private var timerJob: Job? = null
 
     init {
         val database = AppDatabase.getDatabase(application)
         repository = StudyLogRepository(database.studyLogDao())
-        
+
         viewModelScope.launch {
             while (true) {
                 _currentTimeMillis.value = System.currentTimeMillis()
@@ -45,7 +39,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // パラメータを整理し、最新のML結果も反映
     val uiState: StateFlow<HomeUiState> = combine(
         _isStudying,              // 0
         _startTimeMillis,         // 1
@@ -69,18 +62,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             "00:00:00"
         }
 
-        // 最新のML解析結果を取得（最新のログまたは進行中のスナップショットから）
-        val latestMlResult = dbLogs.firstOrNull()?.mlResult
-
         HomeUiState(
             isStudying = isStudying,
             startTimeMillis = startTime,
             lastFinishedTimeMillis = lastFinished,
             timeSinceLastStudy = timeSinceLast,
-            logs = dbLogs.map { StudyLog(it.id, it.date, it.durationMinutes, it.totalElapsedMinutes, it.efficiency, it.mlResult) },
+            logs = dbLogs.map { StudyLog(it.id, it.date, it.durationMinutes, it.totalElapsedMinutes, it.efficiency) },
             showCompletionDialog = showCompletion,
-            editingLog = editingLog,
-            latestMlResult = latestMlResult
+            editingLog = editingLog
         )
     }.stateIn(
         scope = viewModelScope,
@@ -114,8 +103,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val minutes = (durationMillis / 60000).toInt()
         if (minutes >= 1) {
             _showCompletionDialog.value = true
-            // ログの保存自体は Service 終了時またはここで明示的に行いますが、
-            // サービス側で保存するようにしているので、ここでは UI の表示切り替えのみ
         }
         _isStudying.value = false
         _startTimeMillis.value = null
@@ -135,8 +122,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun updateLog(id: Int, minutes: Int) {
         viewModelScope.launch {
-            repository.getLogById(id)?.let { 
-                repository.update(it.copy(durationMinutes = minutes)) 
+            repository.getLogById(id)?.let {
+                repository.update(it.copy(durationMinutes = minutes))
             }
             _editingLog.value = null
         }

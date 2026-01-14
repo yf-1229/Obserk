@@ -25,13 +25,13 @@ class MainActivity : ComponentActivity() {
                 ) { /* Handle permission result */ }
 
                 LaunchedEffect(Unit) {
-                    // マイク権限のリクエストに変更
+                    // カメラ権限のリクエスト
                     if (ContextCompat.checkSelfPermission(
                             context,
-                            Manifest.permission.RECORD_AUDIO
+                            Manifest.permission.CAMERA
                         ) != PackageManager.PERMISSION_GRANTED
                     ) {
-                        launcher.launch(Manifest.permission.RECORD_AUDIO)
+                        launcher.launch(Manifest.permission.CAMERA)
                     }
                 }
 

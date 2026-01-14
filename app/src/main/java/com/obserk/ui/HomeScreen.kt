@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.obserk.R
@@ -129,7 +130,6 @@ private fun performHapticFeedback(context: Context, isStudying: Boolean) {
         // 開始時: ココ
         vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50, 100, 50), -1))
     } else {
-        // 完了時: タタ・タ・ターン！ (喜びと達成感のリズム)
         val successPattern = longArrayOf(0, 40, 60, 40, 100, 40, 60, 150)
         vibrator.vibrate(VibrationEffect.createWaveform(successPattern, -1))
     }
@@ -138,12 +138,32 @@ private fun performHapticFeedback(context: Context, isStudying: Boolean) {
 @Composable
 private fun DisplayContent(uiState: HomeUiState, isDark: Boolean) {
     if (uiState.isStudying) {
-        val startTimeText = uiState.startTimeMillis?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it)) } ?: "--:--"
-        Text(text = stringResource(R.string.started_at, startTimeText), style = MaterialTheme.typography.displayMedium)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val startTimeText = uiState.startTimeMillis?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it)) } ?: "--:--"
+            Text(text = stringResource(R.string.started_at, startTimeText), style = MaterialTheme.typography.displayMedium)
+
+            // False判定時の警告表示
+            if (!uiState.isStudying) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "記録中断中",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color(0xFFB71C1C),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Text(
+                    text = "ペンが検出されません",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFFB71C1C)
+                )
+            }
+        }
     } else {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = stringResource(R.string.since_last_time), style = MaterialTheme.typography.titleMedium, color = if (isDark) Color.Gray else Color.DarkGray)
-            Text(text = uiState.timeSinceLastStudy, style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp))
+            Text(text = "Obserk", style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp))
+            Text(text = "記録を開始しましょう", style = MaterialTheme.typography.titleMedium, color = if (isDark) Color.Gray else Color.DarkGray)
         }
     }
 }

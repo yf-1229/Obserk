@@ -5,7 +5,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface StudyLogDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)suspend fun insertLog(log: StudyLogEntity)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(log: StudyLogEntity)
 
     @Update
     suspend fun update(log: StudyLogEntity)
