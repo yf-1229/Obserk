@@ -35,6 +35,11 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class StudyForegroundService : LifecycleService() {
+    companion object {
+        private val _latestMlResult = kotlinx.coroutines.flow.MutableStateFlow<Boolean?>(null)
+        val latestMlResult: kotlinx.coroutines.flow.StateFlow<Boolean?> = _latestMlResult
+    }
+
     private var timerJob: Job? = null
     private val CHANNEL_ID = "study_channel"
     private var imageCapture: ImageCapture? = null
@@ -82,7 +87,7 @@ class StudyForegroundService : LifecycleService() {
         timerJob?.cancel()
         timerJob = lifecycleScope.launch {
             while (isActive) {
-                delay(60000) // 1分ごとに判定
+                delay(60000)
                 totalMinutes++
                 takePhoto()
             }
@@ -119,15 +124,13 @@ class StudyForegroundService : LifecycleService() {
             val floatArray = outputs.outputFeature0AsTensorBuffer.floatArray
             val maxIndex = floatArray.indices.maxByOrNull { floatArray[it] } ?: -1
 
-            // TFLiteの返り値がTrue(ペンを持っている)なら記録を継続(カウントアップ)
-            // Falseなら記録を中断(カウントアップしない)
             val isPenHolding = (maxIndex == 0)
+            _latestMlResult.value = isPenHolding
             if (isPenHolding) {
                 effectiveMinutes++
                 falseConsecutiveCount = 0
             } else {
                 falseConsecutiveCount++
-                // 5分連続でペンを持っていない判定の場合、バイブレーションで通知
                 if (falseConsecutiveCount >= 5) {
                     triggerAlertHaptic()
                     falseConsecutiveCount = 0
@@ -154,6 +157,19 @@ class StudyForegroundService : LifecycleService() {
             val timings = longArrayOf(0, 50, 100, 50, 100, 50)
             vibrator.vibrate(VibrationEffect.createWaveform(timings, -1))
         }
+        sendAlertNotification()
+    }
+
+    private fun sendAlertNotification() {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val alertNotification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("学習中断の警告")
+            .setContentText("ペンが検出されないため、記録が中断されています。")
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        notificationManager.notify(2, alertNotification)
     }
 
     override fun onDestroy() {
@@ -188,7 +204,7 @@ class StudyForegroundService : LifecycleService() {
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
             imageCapture = ImageCapture.Builder().build()
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+            val cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, cameraSelector, imageCapture)
