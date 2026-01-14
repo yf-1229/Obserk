@@ -22,3 +22,4 @@ data class StudyLog(
     val label: String? = null,
     val mlResult: String? = null
 )
+
