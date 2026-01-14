@@ -9,8 +9,9 @@ data class StudyLogEntity(
     val id: Int = 0,
     val date: String,
     val durationMinutes: Int,
-    val imagePath: String? = null, // 音声のパスを削除し、写真のパスに変更
-    val label: String? = null
+    val imagePath: String? = null,
+    val label: String? = null,
+    val mlResult: String? = null // Step: ML 解析結果（ペンの持ち方の判定など）
 )
 
 @Entity(tableName = "study_labels")

@@ -37,6 +37,18 @@ android {
     }
     buildFeatures {
         compose = true
+        mlModelBinding = true
+    }
+    
+    // 16KB ページサイズアライメントへの対応
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        resources {
+            // TFLite モデルファイルを圧縮しないようにする設定
+            excludes += "/META-INF/*.kotlin_module"
+        }
     }
 }
 
@@ -51,10 +63,13 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.runtime.saveable)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.lifecycle.service)
 
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.tensorflow.lite.support)
+    implementation(libs.tensorflow.lite.metadata)
     ksp(libs.androidx.room.compiler)
 
     // CameraX

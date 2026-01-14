@@ -5,7 +5,11 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [StudyLogEntity::class], version = 3, exportSchema = false)
+@Database(
+    entities = [StudyLogEntity::class, StudyLabelEntity::class], // StudyLabelEntity を追加
+    version = 4, // バージョンを更新
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun studyLogDao(): StudyLogDao
 
@@ -16,7 +20,7 @@ abstract class AppDatabase : RoomDatabase() {
         fun getDatabase(context: Context): AppDatabase {
             return Instance ?: synchronized(this) {
                 Room.databaseBuilder(context, AppDatabase::class.java, "obserk_database")
-                    .fallbackToDestructiveMigration() // 移行パスがない場合にDBを再作成してエラーを防ぐ
+                    .fallbackToDestructiveMigration()
                     .build()
                     .also { Instance = it }
             }
