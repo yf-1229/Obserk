@@ -47,7 +47,7 @@ fun HomeScreen(
     }
 
     Card(
-        modifier = modifier.fillMaxSize().padding(bottom = 8.dp).safeDrawingPadding(),
+        modifier = modifier.fillMaxSize().padding(bottom = 8.dp),
         shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = if (uiState.isStudying) 4.dp else 12.dp),
         border = CardDefaults.outlinedCardBorder(),
@@ -127,7 +127,6 @@ private fun performHapticFeedback(context: Context, isStudying: Boolean) {
     }
     if (!vibrator.hasVibrator()) return
     if (!isStudying) {
-        // 開始時: ココ
         vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50, 100, 50), -1))
     } else {
         val successPattern = longArrayOf(0, 40, 60, 40, 100, 40, 60, 150)
@@ -142,22 +141,24 @@ private fun DisplayContent(uiState: HomeUiState, isDark: Boolean) {
             val startTimeText = uiState.startTimeMillis?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it)) } ?: "--:--"
             Text(text = stringResource(R.string.started_at, startTimeText), style = MaterialTheme.typography.displayMedium)
 
-            // False判定時の警告表示
-            if (!uiState.isStudying) {
+            uiState.latestMlResult?.let { result ->
                 Spacer(modifier = Modifier.height(24.dp))
+                val isSuccess = result == "学習中"
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "記録中断中",
+                        text = if (isSuccess) "学習を検出" else "記録中断中",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = Color(0xFFB71C1C),
+                        color = if (isSuccess) Color(0xFF2E7D32) else Color(0xFFB71C1C),
                         fontWeight = FontWeight.Bold
                     )
                 }
-                Text(
-                    text = "ペンが検出されません",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFB71C1C)
-                )
+                if (!isSuccess) {
+                    Text(
+                        text = "ペンが検出されません",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFFB71C1C)
+                    )
+                }
             }
         }
     } else {
