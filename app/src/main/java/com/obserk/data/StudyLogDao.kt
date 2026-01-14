@@ -1,38 +1,21 @@
 package com.obserk.data
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.Update
+import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface StudyLogDao {
-    @Query("SELECT * FROM study_logs ORDER BY id DESC")
-    fun getAllLogs(): Flow<List<StudyLogEntity>>
-
-    @Query("SELECT * FROM study_logs ORDER BY id DESC LIMIT 1")
-    suspend fun getLatestLog(): StudyLogEntity?
-
-    @Query("SELECT * FROM study_logs WHERE id = :id")
-    suspend fun getLogById(id: Int): StudyLogEntity?
-
-    @Insert
-    suspend fun insert(log: StudyLogEntity): Long
+    @Insert(onConflict = OnConflictStrategy.REPLACE)suspend fun insertLog(log: StudyLogEntity)
 
     @Update
     suspend fun update(log: StudyLogEntity)
 
-    @Query("DELETE FROM study_logs WHERE id = :id")
-    suspend fun deleteById(id: Int)
+    @Query("SELECT * FROM study_logs ORDER BY startTime DESC")
+    fun getAllLogs(): Flow<List<StudyLogEntity>>
 
-    @Query("SELECT * FROM study_labels")
-    fun getAllLabels(): Flow<List<StudyLabelEntity>>
+    @Query("SELECT * FROM study_logs WHERE id = :id")
+    suspend fun getLogById(id: Int): StudyLogEntity?
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun insertLabel(label: StudyLabelEntity)
-
-    @Query("DELETE FROM study_labels WHERE name = :name")
-    suspend fun deleteLabel(name: String)
+    @Query("DELETE FROM study_logs")
+    suspend fun deleteAll()
 }

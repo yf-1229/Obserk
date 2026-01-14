@@ -10,13 +10,15 @@ data class HomeUiState(
     val labels: List<String> = emptyList(),
     val showCompletionDialog: Boolean = false,
     val editingLog: StudyLog? = null,
-    val latestMlResult: String? = null // 追加: 最新の ML 解析結果
+    val latestMlResult: String? = null
 )
 
 data class StudyLog(
     val id: Int = 0,
     val date: String,
     val durationMinutes: Int,
+    val totalElapsedMinutes: Int,
+    val efficiency: Float,
     val label: String? = null,
     val mlResult: String? = null
 )

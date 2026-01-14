@@ -20,12 +20,8 @@ import com.obserk.R
 
 @Composable
 fun LogScreen(uiState: HomeUiState, viewModel: HomeViewModel) {
-    val dailyStats = uiState.logs
-        .groupBy { it.date }
-        .mapValues { entry -> entry.value.sumOf { it.durationMinutes } }
-        .toList()
-        .sortedByDescending { it.first }
-        .take(7)
+    // グラフ用: 直近7回の効率性を表示
+    val efficiencyStats = uiState.logs.take(7).reversed()
 
     Column(
         modifier = Modifier
@@ -39,36 +35,37 @@ fun LogScreen(uiState: HomeUiState, viewModel: HomeViewModel) {
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        if (dailyStats.isNotEmpty()) {
+        // 効率性グラフセクション (Step 4)
+        if (efficiencyStats.isNotEmpty()) {
+            Text(text = "Efficiency (%)", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(180.dp)
                     .padding(bottom = 24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.Bottom
                 ) {
-                    val maxMinutes = dailyStats.maxOf { it.second }.toFloat().coerceAtLeast(1f)
-                    dailyStats.reversed().forEach { stat ->
+                    efficiencyStats.forEach { log ->
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            val barHeight = (stat.second / maxMinutes * 120).dp
+                            val barHeight = (log.efficiency.coerceIn(0f, 100f) * 1.2f).dp
                             Box(
                                 modifier = Modifier
-                                    .width(24.dp)
+                                    .width(20.dp)
                                     .height(barHeight)
                                     .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
                                     .background(MaterialTheme.colorScheme.primary)
                             )
                             Text(
-                                text = stat.first.takeLast(5),
+                                text = "${log.efficiency.toInt()}%",
                                 style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(top = 4.dp)
+                                fontSize = 9.sp
                             )
                         }
                     }
@@ -90,13 +87,11 @@ fun LogScreen(uiState: HomeUiState, viewModel: HomeViewModel) {
                     ) {
                         Column {
                             Text(text = log.date, style = MaterialTheme.typography.bodyLarge)
-                            log.label?.let {
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                            Text(
+                                text = "Eff: ${log.efficiency.toInt()}% (${log.durationMinutes}/${log.totalElapsedMinutes} min)",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
                         }
                         Text(
                             text = stringResource(R.string.minutes_unit, log.durationMinutes),

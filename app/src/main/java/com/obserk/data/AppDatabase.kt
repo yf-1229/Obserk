@@ -2,12 +2,11 @@ package com.obserk.data
 
 import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [StudyLogEntity::class, StudyLabelEntity::class], // StudyLabelEntity を追加
-    version = 4, // バージョンを更新
+    entities = [StudyLogEntity::class], // ラベルを削除
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -15,14 +14,19 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         @Volatile
-        private var Instance: AppDatabase? = null
+        private var INSTANCE: AppDatabase? = null
 
         fun getDatabase(context: Context): AppDatabase {
-            return Instance ?: synchronized(this) {
-                Room.databaseBuilder(context, AppDatabase::class.java, "obserk_database")
-                    .fallbackToDestructiveMigration()
+            return INSTANCE ?: synchronized(this) {
+                val instance = androidx.room.Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    "study_database"
+                )
+                    .fallbackToDestructiveMigration() // 開発用：構造変更時にデータをリセット
                     .build()
-                    .also { Instance = it }
+                INSTANCE = instance
+                instance
             }
         }
     }

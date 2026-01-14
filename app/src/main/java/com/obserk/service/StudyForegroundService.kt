@@ -3,12 +3,15 @@ package com.obserk.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.IBinder
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -39,6 +42,10 @@ class StudyForegroundService : LifecycleService() {
     private lateinit var repository: StudyLogRepository
     private var penHoldingModel: PenHolding? = null
 
+    private var effectiveMinutes = 0
+    private var totalMinutes = 0
+    private var falseConsecutiveCount = 0 // 連続 False カウンター
+
     override fun onCreate() {
         super.onCreate()
         cameraExecutor = Executors.newSingleThreadExecutor()
@@ -47,29 +54,19 @@ class StudyForegroundService : LifecycleService() {
         createNotificationChannel()
         setupCamera()
 
-        // モデルを一度だけ初期化。16KB問題等のネイティブエラーを捕まえるため Throwable を使用
         try {
             penHoldingModel = PenHolding.newInstance(this)
         } catch (e: Throwable) {
-            Log.e("StudyService", "Critical: Failed to load ML model. Possible 16KB alignment issue.", e)
+            Log.e("StudyService", "Failed to load ML model", e)
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Android 14+ では startForeground を非常に早い段階で呼ぶ必要がある
         val notification = createNotification()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // API 34
-            startForeground(
-                1,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
-            )
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) { // API 29
-            startForeground(
-                1,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
-            )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA)
         } else {
             startForeground(1, notification)
         }
@@ -84,6 +81,7 @@ class StudyForegroundService : LifecycleService() {
         timerJob = lifecycleScope.launch {
             while (isActive) {
                 delay(60000)
+                totalMinutes++
                 takePhoto()
             }
         }
@@ -113,29 +111,61 @@ class StudyForegroundService : LifecycleService() {
         try {
             val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return
             val image = TensorImage.fromBitmap(bitmap)
-
-            // モデルの出力仕様に合わせて AsTensorBuffer を使用
             val outputs = model.process(image.tensorBuffer)
-            val outputBuffer = outputs.outputFeature0AsTensorBuffer
-            val floatArray = outputBuffer.floatArray
-
+            
+            val floatArray = outputs.outputFeature0AsTensorBuffer.floatArray
             val maxIndex = floatArray.indices.maxByOrNull { floatArray[it] } ?: -1
-            val confidence = floatArray.getOrNull(maxIndex) ?: 0f
-            val resultText = "Class $maxIndex (${(confidence * 100).toInt()}%)"
-
-            lifecycleScope.launch(Dispatchers.IO) {
-                val currentDate = SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault()).format(Date())
-                repository.insert(
-                    StudyLogEntity(
-                        date = currentDate,
-                        durationMinutes = 0,
-                        imagePath = file.absolutePath,
-                        mlResult = resultText
-                    )
-                )
+            
+            val isPenHolding = (maxIndex == 0)
+            if (isPenHolding) {
+                effectiveMinutes++
+                falseConsecutiveCount = 0 // 成功したらリセット
+            } else {
+                falseConsecutiveCount++ // 失敗したらカウントアップ
+                
+                // 5分連続で失敗した場合にハプティクスを発生
+                if (falseConsecutiveCount >= 5) {
+                    triggerAlertHaptic()
+                    falseConsecutiveCount = 0 // 通知後はリセット（または再度5分待つ場合はそのまま）
+                }
             }
+
+            Log.d("StudyService", "Analyze: $isPenHolding, ConsecutiveFalse: $falseConsecutiveCount")
+
         } catch (e: Exception) {
             Log.e("StudyService", "ML analysis failed", e)
+        }
+    }
+
+    private fun triggerAlertHaptic() {
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
+        if (vibrator.hasVibrator()) {
+            // コ、コ、コ (短い3回の振動)
+            val timings = longArrayOf(0, 50, 100, 50, 100, 50)
+            vibrator.vibrate(VibrationEffect.createWaveform(timings, -1))
+        }
+    }
+
+    override fun onDestroy() {
+        saveFinalLog()
+        penHoldingModel?.close()
+        cameraExecutor.shutdown()
+        super.onDestroy()
+    }
+
+    private fun saveFinalLog() {
+        if (totalMinutes == 0) return
+        val efficiency = (effectiveMinutes.toFloat() / totalMinutes.toFloat()) * 100f
+        val currentDate = SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Date())
+        lifecycleScope.launch(Dispatchers.IO) {
+            repository.insert(StudyLogEntity(startTime = System.currentTimeMillis(), endTime = System.currentTimeMillis(), durationSeconds = (totalMinutes * 60).toLong()))
         }
     }
 
@@ -157,27 +187,18 @@ class StudyForegroundService : LifecycleService() {
     private fun createNotification(): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Obserk")
-            .setContentText("Studying in progress (ML active)")
+            .setContentText("Monitoring study efficiency...")
             .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID, "Study Service", NotificationManager.IMPORTANCE_LOW
-            )
+            val channel = NotificationChannel(CHANNEL_ID, "Study Service", NotificationManager.IMPORTANCE_LOW)
             val manager = getSystemService(NotificationManager::class.java) as NotificationManager
             manager.createNotificationChannel(channel)
         }
-    }
-
-    override fun onDestroy() {
-        penHoldingModel?.close()
-        cameraExecutor.shutdown()
-        super.onDestroy()
     }
 
     override fun onBind(intent: Intent): IBinder? {

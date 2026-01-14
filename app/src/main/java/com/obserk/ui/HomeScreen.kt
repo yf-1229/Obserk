@@ -31,19 +31,10 @@ fun HomeScreen(
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
 
-    if (uiState.showCompletionDialog) {
-        CompletionDialog(
-            labels = uiState.labels,
-            onLabelSelected = { viewModel.addLabelToLastLog(it) },
-            onDismiss = { viewModel.dismissCompletionDialog() }
-        )
-    }
-
     uiState.editingLog?.let { log ->
         EditLogDialog(
             log = log,
-            labels = uiState.labels,
-            onSave = { minutes, label -> viewModel.updateLog(log.id, minutes, label) },
+            onSave = { minutes -> viewModel.updateLog(log.id, minutes) },
             onCancel = { viewModel.cancelEditing() }
         )
     }
@@ -108,7 +99,7 @@ fun CompletionDialog(labels: List<String>, onLabelSelected: (String) -> Unit, on
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun EditLogDialog(log: StudyLog, labels: List<String>, onSave: (Int, String?) -> Unit, onCancel: () -> Unit) {
+fun EditLogDialog(log: StudyLog, onSave: (Int) -> Unit, onCancel: () -> Unit) {
     var minutes by remember { mutableStateOf(log.durationMinutes.toString()) }
     var selectedLabel by remember { mutableStateOf(log.label ?: "") }
     AlertDialog(
@@ -118,17 +109,10 @@ fun EditLogDialog(log: StudyLog, labels: List<String>, onSave: (Int, String?) ->
             Column {
                 OutlinedTextField(value = minutes, onValueChange = { minutes = it }, label = { Text("時間 (分)") })
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("ラベル")
-                FlowRow(modifier = Modifier.padding(vertical = 8.dp)) {
-                    labels.forEach { label ->
-                        FilterChip(selected = selectedLabel == label, onClick = { selectedLabel = label }, label = { Text(label) }, modifier = Modifier.padding(4.dp))
-                    }
-                }
-                OutlinedTextField(value = selectedLabel, onValueChange = { selectedLabel = it }, label = { Text("新しいラベル") })
             }
         },
         confirmButton = {
-            Button(onClick = { onSave(minutes.toIntOrNull() ?: log.durationMinutes, if (selectedLabel.isBlank()) null else selectedLabel) }) { Text("更新") }
+            Button(onClick = { onSave(minutes.toIntOrNull() ?: log.durationMinutes) }) { Text("更新") }
         },
         dismissButton = { TextButton(onClick = onCancel) { Text("キャンセル") } }
     )
@@ -142,9 +126,12 @@ private fun performHapticFeedback(context: Context, isStudying: Boolean) {
     }
     if (!vibrator.hasVibrator()) return
     if (!isStudying) {
+        // 開始時: ココ
         vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50, 100, 50), -1))
     } else {
-        vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 50, 100, 50, 100, 50, 200, 300, 100, 300), -1))
+        // 完了時: タタ・タ・ターン！ (喜びと達成感のリズム)
+        val successPattern = longArrayOf(0, 40, 60, 40, 100, 40, 60, 150)
+        vibrator.vibrate(VibrationEffect.createWaveform(successPattern, -1))
     }
 }
 

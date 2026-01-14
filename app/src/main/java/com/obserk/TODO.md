@@ -1,10 +1,5 @@
-1. Fix design (ユーザーの操作に支障の有りそうなもの) #Done
-2. make fun LogScreen() <- UiStateからこれまでの勉強時間を表示 #Done
-3. Set Room to save the data #Done
-4. Not Timer it's stopwatch(FinishTime - StartTime to record)
-5. Status bar was covered with white. Update UI.
-6. すべての文字をstrings.xmlに移行して。
-7. haptics
-8. fix SQL
-9. kumikomi tensorflow lite
-10. gamen status bar kabutteru
+1. Cameraで撮影した写真をtfliteに渡して、その結果がtrueであれば記録は続行。falseなら一時的に中断(falseが返ってきた後、Trueが返ってくるまでの時間は含まない。)
+2. その記録に含まなかった時間もログ画面には表示して、記録された時間と％で比較。
+3. その％と記録時間だけを各回、ログに保管。
+4. ログ画面に表示されるグラフは、各回のその％(効率性)を表示して。
+5. 

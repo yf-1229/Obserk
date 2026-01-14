@@ -5,17 +5,12 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "study_logs")
 data class StudyLogEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val date: String,
-    val durationMinutes: Int,
-    val imagePath: String? = null,
-    val label: String? = null,
-    val mlResult: String? = null // Step: ML 解析結果（ペンの持ち方の判定など）
-)
-
-@Entity(tableName = "study_labels")
-data class StudyLabelEntity(
-    @PrimaryKey
-    val name: String
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val date: String,            // 表示用の日付文字列
+    val startTime: Long,         // 開始時刻（ミリ秒）
+    val endTime: Long? = null,   // 終了時刻（ミリ秒）
+    val durationMinutes: Int = 0, // 学習時間（分）
+    val totalElapsedMinutes: Int = 0,
+    val efficiency: Float = 0f,   // 集中度・効率
+    val mlResult: String = ""    // ML解析結果のテキスト
 )
