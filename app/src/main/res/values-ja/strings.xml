@@ -6,4 +6,20 @@
     <string name="since_last_time">前回から</string>
     <string name="study_logs_title">学習記録</string>
     <string name="minutes_unit">%1$d 分</string>
+    <string name="congratulations">おめでとう！</string>
+    <string name="what_did_you_do">何をしましたか？</string>
+    <string name="new_label">新しいラベル</string>
+    <string name="save">保存</string>
+    <string name="edit_record">記録の編集</string>
+    <string name="time_minutes">時間 (分)</string>
+    <string name="update">更新</string>
+    <string name="cancel">キャンセル</string>
+    <string name="studying_detected">学習を検出</string>
+    <string name="recording_interrupted">記録中断中</string>
+    <string name="pen_not_detected">ペンが検出されません</string>
+    <string name="start_recording">記録を開始しましょう</string>
+    <string name="efficiency_label">効率性 (%)</string>
+    <string name="camera_mode">カメラモード</string>
+    <string name="camera_on">カメラオン</string>
+    <string name="camera_off">カメラオフ</string>
 </resources>

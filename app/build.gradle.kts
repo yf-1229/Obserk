@@ -43,7 +43,7 @@ android {
     // 16KB ページサイズアライメントへの対応
     packaging {
         jniLibs {
-            useLegacyPackaging = true
+            useLegacyPackaging = false
         }
         resources {
             // TFLite モデルファイルを圧縮しないようにする設定

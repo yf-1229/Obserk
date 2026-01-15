@@ -6,4 +6,20 @@
     <string name="since_last_time">Since last time</string>
     <string name="study_logs_title">Study Logs</string>
     <string name="minutes_unit">%1$d min</string>
+    <string name="congratulations">Congratulations!</string>
+    <string name="what_did_you_do">What did you do?</string>
+    <string name="new_label">New label</string>
+    <string name="save">Save</string>
+    <string name="edit_record">Edit Record</string>
+    <string name="time_minutes">Time (minutes)</string>
+    <string name="update">Update</string>
+    <string name="cancel">Cancel</string>
+    <string name="studying_detected">Study detected</string>
+    <string name="recording_interrupted">Recording interrupted</string>
+    <string name="pen_not_detected">Pen not detected</string>
+    <string name="start_recording">Let\'s start recording</string>
+    <string name="efficiency_label">Efficiency (%)</string>
+    <string name="camera_mode">Camera Mode</string>
+    <string name="camera_on">Camera On</string>
+    <string name="camera_off">Camera Off</string>
 </resources>

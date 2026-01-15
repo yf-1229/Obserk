@@ -20,13 +20,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             ObserkTheme {
                 val context = LocalContext.current
+                val prefs = context.getSharedPreferences("obserk_prefs", android.content.Context.MODE_PRIVATE)
+                val isCameraEnabled = prefs.getBoolean("camera_enabled", true)
+                
                 val launcher = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestPermission()
                 ) { /* Handle permission result */ }
 
-                LaunchedEffect(Unit) {
-                    // カメラ権限のリクエスト
-                    if (ContextCompat.checkSelfPermission(
+                LaunchedEffect(isCameraEnabled) {
+                    // カメラ権限のリクエスト（カメラが有効な場合のみ）
+                    if (isCameraEnabled && ContextCompat.checkSelfPermission(
                             context,
                             Manifest.permission.CAMERA
                         ) != PackageManager.PERMISSION_GRANTED

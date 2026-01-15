@@ -26,6 +26,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _showCompletionDialog = MutableStateFlow(false)
     private val _editingLog = MutableStateFlow<StudyLog?>(null)
+    
+    private val prefs = application.getSharedPreferences("obserk_prefs", android.content.Context.MODE_PRIVATE)
+    private val _isCameraEnabled = MutableStateFlow(prefs.getBoolean("camera_enabled", true))
 
     init {
         val database = AppDatabase.getDatabase(application)
@@ -47,7 +50,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         repository.allLogs,       // 4
         _showCompletionDialog,    // 5
         _editingLog,              // 6
-        StudyForegroundService.latestMlResult // 7
+        StudyForegroundService.latestMlResult, // 7
+        _isCameraEnabled          // 8
     ) { params ->
         val isStudying = params[0] as Boolean
         val startTime = params[1] as Long?
@@ -57,6 +61,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val showCompletion = params[5] as Boolean
         val editingLog = params[6] as StudyLog?
         val mlResult = params[7] as Boolean?
+        val cameraEnabled = params[8] as Boolean
 
 
         HomeUiState(
@@ -66,7 +71,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             logs = dbLogs.map { StudyLog(it.id, it.date, it.durationMinutes, it.totalElapsedMinutes, it.efficiency) },
             showCompletionDialog = showCompletion,
             editingLog = editingLog,
-            latestMlResult = if (mlResult == true) "学習中" else if (mlResult == false) "中断中" else null
+            latestMlResult = mlResult,
+            isCameraEnabled = cameraEnabled
         )
     }.stateIn(
         scope = viewModelScope,
@@ -77,12 +83,20 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleStudying() {
         if (_isStudying.value) stopStopwatch() else startStopwatch()
     }
+    
+    fun toggleCamera() {
+        val newValue = !_isCameraEnabled.value
+        _isCameraEnabled.value = newValue
+        prefs.edit().putBoolean("camera_enabled", newValue).apply()
+        StudyForegroundService.setCameraEnabled(newValue)
+    }
 
     private fun startStopwatch() {
         _isStudying.value = true
         _startTimeMillis.value = System.currentTimeMillis()
         val context = getApplication<Application>().applicationContext
         val intent = Intent(context, StudyForegroundService::class.java)
+        intent.putExtra("camera_enabled", _isCameraEnabled.value)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
         } else {

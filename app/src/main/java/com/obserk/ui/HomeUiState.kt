@@ -9,7 +9,8 @@ data class HomeUiState(
     val labels: List<String> = emptyList(),
     val showCompletionDialog: Boolean = false,
     val editingLog: StudyLog? = null,
-    val latestMlResult: String? = null
+    val latestMlResult: Boolean? = null,
+    val isCameraEnabled: Boolean = true
 )
 
 data class StudyLog(
