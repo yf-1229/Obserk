@@ -106,7 +106,7 @@ class StudyForegroundService : LifecycleService() {
     }
 
     private fun takePhoto() {
-        if (!isCameraEnabled || imageCapture == null) return
+        if (!isCameraEnabled || imageCapture == null || cameraExecutor == null) return
         
         val outputFile = File.createTempFile("photo", ".jpg", cacheDir)
         val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
