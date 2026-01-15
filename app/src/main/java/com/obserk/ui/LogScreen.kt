@@ -37,7 +37,7 @@ fun LogScreen(uiState: HomeUiState, viewModel: HomeViewModel) {
 
         // 効率性グラフセクション (Step 4)
         if (efficiencyStats.isNotEmpty()) {
-            Text(text = "Efficiency (%)", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
+            Text(text = stringResource(R.string.efficiency_label), style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(bottom = 4.dp))
             Card(
                 modifier = Modifier
                     .fillMaxWidth()

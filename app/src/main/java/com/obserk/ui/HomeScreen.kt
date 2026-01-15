@@ -7,6 +7,9 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Videocam
+import androidx.compose.material.icons.filled.VideocamOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -57,17 +60,51 @@ fun HomeScreen(
             viewModel.toggleStudying()
         },
     ) {
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val isLandscape = maxWidth > maxHeight
-            if (isLandscape) {
-                Row(modifier = Modifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceAround) {
-                    DisplayContent(uiState, isDark)
-                    Text(text = if (uiState.isStudying) stringResource(R.string.tap_to_stop) else stringResource(R.string.tap_to_start), style = MaterialTheme.typography.titleLarge)
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Camera toggle button at the top
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                FilledTonalIconButton(
+                    onClick = { viewModel.toggleCamera() },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = if (uiState.isCameraEnabled) 
+                                androidx.compose.material.icons.Icons.Default.Videocam 
+                            else 
+                                androidx.compose.material.icons.Icons.Default.VideocamOff,
+                            contentDescription = stringResource(R.string.camera_mode),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = if (uiState.isCameraEnabled) 
+                                stringResource(R.string.camera_on) 
+                            else 
+                                stringResource(R.string.camera_off),
+                            fontSize = 8.sp
+                        )
+                    }
                 }
-            } else {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) { DisplayContent(uiState, isDark) }
-                    Text(text = if (uiState.isStudying) stringResource(R.string.tap_to_stop) else stringResource(R.string.tap_to_start), style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 40.dp))
+            }
+            
+            // Main content
+            BoxWithConstraints(modifier = Modifier.fillMaxSize().weight(1f)) {
+                val isLandscape = maxWidth > maxHeight
+                if (isLandscape) {
+                    Row(modifier = Modifier.fillMaxSize().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceAround) {
+                        DisplayContent(uiState, isDark)
+                        Text(text = if (uiState.isStudying) stringResource(R.string.tap_to_stop) else stringResource(R.string.tap_to_start), style = MaterialTheme.typography.titleLarge)
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) { DisplayContent(uiState, isDark) }
+                        Text(text = if (uiState.isStudying) stringResource(R.string.tap_to_stop) else stringResource(R.string.tap_to_start), style = MaterialTheme.typography.titleLarge, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 40.dp))
+                    }
                 }
             }
         }
@@ -80,20 +117,20 @@ fun CompletionDialog(labels: List<String>, onLabelSelected: (String) -> Unit, on
     var newLabel by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("おめでとう！") },
+        title = { Text(stringResource(R.string.congratulations)) },
         text = {
             Column {
-                Text("何をしましたか？")
+                Text(stringResource(R.string.what_did_you_do))
                 FlowRow(modifier = Modifier.padding(vertical = 8.dp)) {
                     labels.forEach { label ->
                         SuggestionChip(onClick = { onLabelSelected(label) }, label = { Text(label) }, modifier = Modifier.padding(4.dp))
                     }
                 }
-                OutlinedTextField(value = newLabel, onValueChange = { newLabel = it }, label = { Text("新しいラベル") })
+                OutlinedTextField(value = newLabel, onValueChange = { newLabel = it }, label = { Text(stringResource(R.string.new_label)) })
             }
         },
         confirmButton = {
-            Button(onClick = { if (newLabel.isNotBlank()) onLabelSelected(newLabel) }) { Text("保存") }
+            Button(onClick = { if (newLabel.isNotBlank()) onLabelSelected(newLabel) }) { Text(stringResource(R.string.save)) }
         }
     )
 }
@@ -105,17 +142,17 @@ fun EditLogDialog(log: StudyLog, onSave: (Int) -> Unit, onCancel: () -> Unit) {
     var selectedLabel by remember { mutableStateOf(log.label ?: "") }
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("記録の編集") },
+        title = { Text(stringResource(R.string.edit_record)) },
         text = {
             Column {
-                OutlinedTextField(value = minutes, onValueChange = { minutes = it }, label = { Text("時間 (分)") })
+                OutlinedTextField(value = minutes, onValueChange = { minutes = it }, label = { Text(stringResource(R.string.time_minutes)) })
                 Spacer(modifier = Modifier.height(8.dp))
             }
         },
         confirmButton = {
-            Button(onClick = { onSave(minutes.toIntOrNull() ?: log.durationMinutes) }) { Text("更新") }
+            Button(onClick = { onSave(minutes.toIntOrNull() ?: log.durationMinutes) }) { Text(stringResource(R.string.update)) }
         },
-        dismissButton = { TextButton(onClick = onCancel) { Text("キャンセル") } }
+        dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.cancel)) } }
     )
 }
 
@@ -143,10 +180,10 @@ private fun DisplayContent(uiState: HomeUiState, isDark: Boolean) {
 
             uiState.latestMlResult?.let { result ->
                 Spacer(modifier = Modifier.height(24.dp))
-                val isSuccess = result == "学習中"
+                val isSuccess = result
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (isSuccess) "学習を検出" else "記録中断中",
+                        text = if (isSuccess) stringResource(R.string.studying_detected) else stringResource(R.string.recording_interrupted),
                         style = MaterialTheme.typography.headlineSmall,
                         color = if (isSuccess) Color(0xFF2E7D32) else Color(0xFFB71C1C),
                         fontWeight = FontWeight.Bold
@@ -154,7 +191,7 @@ private fun DisplayContent(uiState: HomeUiState, isDark: Boolean) {
                 }
                 if (!isSuccess) {
                     Text(
-                        text = "ペンが検出されません",
+                        text = stringResource(R.string.pen_not_detected),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFFB71C1C)
                     )
@@ -164,7 +201,7 @@ private fun DisplayContent(uiState: HomeUiState, isDark: Boolean) {
     } else {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(text = "Obserk", style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp))
-            Text(text = "記録を開始しましょう", style = MaterialTheme.typography.titleMedium, color = if (isDark) Color.Gray else Color.DarkGray)
+            Text(text = stringResource(R.string.start_recording), style = MaterialTheme.typography.titleMedium, color = if (isDark) Color.Gray else Color.DarkGray)
         }
     }
 }

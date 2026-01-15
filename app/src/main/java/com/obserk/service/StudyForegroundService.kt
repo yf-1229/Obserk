@@ -36,47 +36,65 @@ class StudyForegroundService : LifecycleService() {
 
     private var handLandmarker: HandLandmarker? = null
     private var penHoldingModel: PenHoldingClassifier? = null
-    private lateinit var cameraProviderFuture: ListenableFuture<ProcessCameraProvider>
-    private lateinit var imageCapture: ImageCapture
-    private lateinit var cameraExecutor: ExecutorService
+    private var cameraProviderFuture: ListenableFuture<ProcessCameraProvider>? = null
+    private var imageCapture: ImageCapture? = null
+    private var cameraExecutor: ExecutorService? = null
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
+    private var isCameraEnabled = true
 
     companion object {
         private val _latestMlResult = MutableStateFlow<Boolean?>(null)
         @JvmStatic
         val latestMlResult: StateFlow<Boolean?> = _latestMlResult
+        
+        private var cameraEnabledGlobal = true
+        
+        @JvmStatic
+        fun setCameraEnabled(enabled: Boolean) {
+            cameraEnabledGlobal = enabled
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
-        setupHandLandmarker()
-        try {
-            penHoldingModel = PenHoldingClassifier.newInstance(this)
-        } catch (e: Exception) {
-            Log.e("StudyService", "Failed to load TFLite model", e)
+        isCameraEnabled = cameraEnabledGlobal
+        
+        if (isCameraEnabled) {
+            setupHandLandmarker()
+            try {
+                penHoldingModel = PenHoldingClassifier.newInstance(this)
+            } catch (e: Exception) {
+                Log.e("StudyService", "Failed to load TFLite model", e)
+            }
+            cameraExecutor = Executors.newSingleThreadExecutor()
         }
-        cameraExecutor = Executors.newSingleThreadExecutor()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        startCameraAndAnalysis()
+        isCameraEnabled = intent?.getBooleanExtra("camera_enabled", true) ?: true
+        
+        if (isCameraEnabled) {
+            startCameraAndAnalysis()
+        }
         return START_STICKY
     }
 
     @SuppressLint("MissingPermission")
     private fun startCameraAndAnalysis() {
+        if (!isCameraEnabled) return
+        
         cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
+        cameraProviderFuture?.addListener({
+            val cameraProvider = cameraProviderFuture?.get() ?: return@addListener
             imageCapture = ImageCapture.Builder().build()
 
             try {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, androidx.camera.core.CameraSelector.DEFAULT_FRONT_CAMERA, imageCapture)
                 serviceScope.launch {
-                    while (true) {
+                    while (isCameraEnabled) {
                         takePhoto()
                         delay(5000) // 5秒ごとに撮影
                     }
@@ -88,12 +106,14 @@ class StudyForegroundService : LifecycleService() {
     }
 
     private fun takePhoto() {
+        if (!isCameraEnabled || imageCapture == null) return
+        
         val outputFile = File.createTempFile("photo", ".jpg", cacheDir)
         val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
 
-        imageCapture.takePicture(
+        imageCapture?.takePicture(
             outputOptions,
-            cameraExecutor,
+            cameraExecutor!!,
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     analyzePhoto(outputFile)
@@ -114,6 +134,8 @@ class StudyForegroundService : LifecycleService() {
     }
 
     private fun setupHandLandmarker() {
+        if (!isCameraEnabled) return
+        
         val baseOptions = BaseOptions.builder()
             .setModelAssetPath("hand_landmarker.task") // assetsにモデルを配置してください
             .build()
@@ -127,6 +149,8 @@ class StudyForegroundService : LifecycleService() {
     }
 
     private fun analyzePhoto(file: File) {
+        if (!isCameraEnabled) return
+        
         val model = penHoldingModel ?: return
         try {
             val bitmap = BitmapFactory.decodeFile(file.absolutePath) ?: return
@@ -173,7 +197,7 @@ class StudyForegroundService : LifecycleService() {
     override fun onDestroy() {
         super.onDestroy()
         serviceJob.cancel()
-        cameraExecutor.shutdown()
+        cameraExecutor?.shutdown()
         penHoldingModel?.close()
         _latestMlResult.value = null
     }
