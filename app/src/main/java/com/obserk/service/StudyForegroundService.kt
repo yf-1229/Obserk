@@ -48,6 +48,7 @@ class StudyForegroundService : LifecycleService() {
         @JvmStatic
         val latestMlResult: StateFlow<Boolean?> = _latestMlResult
         
+        @Volatile
         private var cameraEnabledGlobal = true
         
         @JvmStatic
@@ -106,14 +107,15 @@ class StudyForegroundService : LifecycleService() {
     }
 
     private fun takePhoto() {
-        if (!isCameraEnabled || imageCapture == null || cameraExecutor == null) return
+        val executor = cameraExecutor
+        if (!isCameraEnabled || imageCapture == null || executor == null) return
         
         val outputFile = File.createTempFile("photo", ".jpg", cacheDir)
         val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
 
         imageCapture?.takePicture(
             outputOptions,
-            cameraExecutor!!,
+            executor,
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     analyzePhoto(outputFile)

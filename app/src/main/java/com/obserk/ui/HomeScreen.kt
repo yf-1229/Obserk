@@ -70,25 +70,19 @@ fun HomeScreen(
             ) {
                 FilledTonalIconButton(
                     onClick = { viewModel.toggleCamera() },
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(56.dp)
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = if (uiState.isCameraEnabled) 
-                                Icons.Default.Videocam 
-                            else 
-                                Icons.Default.VideocamOff,
-                            contentDescription = stringResource(R.string.camera_mode),
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Text(
-                            text = if (uiState.isCameraEnabled) 
-                                stringResource(R.string.camera_on) 
-                            else 
-                                stringResource(R.string.camera_off),
-                            fontSize = 8.sp
-                        )
-                    }
+                    Icon(
+                        imageVector = if (uiState.isCameraEnabled) 
+                            Icons.Default.Videocam 
+                        else 
+                            Icons.Default.VideocamOff,
+                        contentDescription = if (uiState.isCameraEnabled)
+                            stringResource(R.string.camera_on)
+                        else
+                            stringResource(R.string.camera_off),
+                        modifier = Modifier.size(28.dp)
+                    )
                 }
             }
             
