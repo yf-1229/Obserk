@@ -75,9 +75,9 @@ fun HomeScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             imageVector = if (uiState.isCameraEnabled) 
-                                androidx.compose.material.icons.Icons.Default.Videocam 
+                                Icons.Default.Videocam 
                             else 
-                                androidx.compose.material.icons.Icons.Default.VideocamOff,
+                                Icons.Default.VideocamOff,
                             contentDescription = stringResource(R.string.camera_mode),
                             modifier = Modifier.size(24.dp)
                         )
