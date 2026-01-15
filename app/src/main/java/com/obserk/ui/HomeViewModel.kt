@@ -58,17 +58,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         val editingLog = params[6] as StudyLog?
         val mlResult = params[7] as Boolean?
 
-        val timeSinceLast = if (!isStudying && lastFinished != null) {
-            formatDuration(currentTime - lastFinished)
-        } else {
-            "00:00:00"
-        }
 
         HomeUiState(
             isStudying = isStudying,
             startTimeMillis = startTime,
             lastFinishedTimeMillis = lastFinished,
-            timeSinceLastStudy = timeSinceLast,
             logs = dbLogs.map { StudyLog(it.id, it.date, it.durationMinutes, it.totalElapsedMinutes, it.efficiency) },
             showCompletionDialog = showCompletion,
             editingLog = editingLog,
